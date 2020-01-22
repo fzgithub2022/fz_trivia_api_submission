@@ -35,10 +35,12 @@ def create_app(test_config=None):
   '''
   @app.route('/categories')
   def get_categories():
-    categories = {}
-    results = Category.query.all()
+    categories = {} #create dictionary
+    results = Category.query.all() #query objects from database
+    #look through objects and place them as "key"="values" in dictionalry
     for result in results:
       categories[result.id] = result.type
+    #return categories
     return jsonify({
       'categories':categories
     })
@@ -58,12 +60,17 @@ def create_app(test_config=None):
   '''
   @app.route('/questions')
   def get_questions():
+    #pagination
     page = request.args.get('page',1,type=int)
     start = (page - 1) * 10
     end = start + 10
+    #get questions from db
     questions = Question.query.all()
+    #format questions according to class method
     formatted_questions = [question.format() for question in questions]
+    #categories from database
     categories = Category.query.all()
+    
     current_category = 2
     return jsonify({
       'success':True,

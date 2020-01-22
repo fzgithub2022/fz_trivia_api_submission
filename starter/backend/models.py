@@ -4,7 +4,9 @@ from flask_sqlalchemy import SQLAlchemy
 import json
 
 database_name = "trivia"
-database_path = "postgres://{}/{}".format('localhost:5432', database_name)
+database_uname = "caryn"
+database_password = "Udacity"
+database_path = "postgres://{}:{}@{}/{}".format(database_uname,database_password,'localhost:5432', database_name)
 
 db = SQLAlchemy()
 
@@ -70,7 +72,11 @@ class Category(db.Model):
 
   def __init__(self, type):
     self.type = type
-
+  
+  def insert(self):
+    db.session.add(self)
+    db.session.commit()
+  
   def format(self):
     return {
       'id': self.id,
