@@ -42,14 +42,21 @@ def create_app(test_config=None):
     @app.route('/categories')
     def get_categories():
         categories = {}  # create dictionary
-        results = Category.query.all()  # query objects from database
-        # look through objects and place them as "key"="values" in dictionalry
-        for result in results:
-            categories[result.id] = result.type
-        # return categories
-        return jsonify({
-            'categories': categories
-        })
+        try:
+            results = Category.query.all()
+            # look through objects and place them
+            # as "key"="values" in dictionary
+            for result in results:
+                categories[result.id] = result.type
+            # return categories
+            return jsonify({
+                'categories': categories,
+                'success': True
+            })
+        except:
+            abort(404)
+        
+        
     '''
     @TODO:
     Create an endpoint to handle GET requests for questions,
@@ -213,7 +220,9 @@ def create_app(test_config=None):
 
     @app.errorhandler(404)
     def handle_404(error):
-        return jsonify({'message': 'resource not found!'})
+        return jsonify({
+            'message': 'resource not found!',
+            'success': False})
 
     @app.errorhandler(405)
     def handle_405(error):
