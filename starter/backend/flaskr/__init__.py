@@ -74,20 +74,23 @@ def create_app(test_config=None):
         page = request.args.get('page', 1, type=int)
         start = (page - 1) * 10
         end = start + 10
-        # get questions from db
-        questions = Question.query.all()
-        # format questions according to class method
-        formatted_questions = [question.format() for question in questions]
-        # categories from database
-        categories = Category.query.all()
-        current_category = 2
-        return jsonify({
-            'success': True,
-            'questions': formatted_questions[start:end],
-            'total_questions': int(len(formatted_questions)),
-            'categories': len(categories),
-            'current_category': current_category
-        })
+        try:
+            # get questions from db
+            questions = Question.query.all()
+            # format questions according to class method
+            formatted_questions = [question.format() for question in questions]
+            # categories from database
+            categories = Category.query.all()
+            current_category = 2
+            return jsonify({
+                'success': True,
+                'questions': formatted_questions[start:end],
+                'total_questions': int(len(formatted_questions)),
+                'categories': len(categories),
+                'current_category': current_category
+            })
+        except BaseException:
+            abort(404)
     '''
     @TODO:
     Create an endpoint to DELETE question using a question ID.
@@ -98,12 +101,14 @@ def create_app(test_config=None):
     @app.route('/questions/<int:q_id>', methods=['DELETE'])
     def delete_question(q_id):
         try:
-            to_delete = Question.query.get(q_id)
-            to_delete.delete()
-        except:
+            question = Question.query.filter(Question.id == q_id).one_or_none()
+            question.delete()
+            return jsonify({
+                'succes': True
+                })
+        except BaseException:
             abort(404)
-        finally:
-            return jsonify({'succes': True})
+
     '''
     @TODO:
     Create an endpoint to POST a new question,
@@ -134,7 +139,8 @@ def create_app(test_config=None):
                 'status': 'question post failed!'
             })
         return jsonify({
-            'status': 'Successfully posted to new question'
+            'status': 'Successfully posted to new question',
+            'success': True
         })
     '''
     @TODO:
@@ -169,16 +175,19 @@ def create_app(test_config=None):
     '''
     @app.route('/categories/<int:c_id>/questions')
     def q_bycategory(c_id):
-        results = Question.query.filter(Question.category == c_id)
-        category = Category.query.get(c_id)
-        questions = [result.format() for result in results]
-        total_questions = int(len(questions))
-        return jsonify({
-            'success': True,
-            'questions': questions,
-            'total_questions': total_questions,
-            'current_category': category.type
-        })
+        try:
+            results = Question.query.filter(Question.category == c_id)
+            category = Category.query.get(c_id)
+            questions = [result.format() for result in results]
+            total_questions = int(len(questions))
+            return jsonify({
+                'success': True,
+                'questions': questions,
+                'total_questions': total_questions,
+                'current_category': category.type
+            })
+        except BaseException:
+            abort(404)
     '''
     @TODO:
     Create a POST endpoint to get questions to play the quiz.
@@ -197,45 +206,47 @@ def create_app(test_config=None):
         previous_questions = body.get('previous_questions')
         quiz_category = body.get('quiz_category')
         available_ids = []
-        # if they didn't choose category
-        if quiz_category:
-            # Get all questions
-            questions = Question.query.all()
-        else:  # otherwise get category by ID
-            # get all questions in that category
-            questions = Question.query.filter(
-                Question.category == quiz_category['id']
-            )
-        # if its the first question
-        # a.k.a previous_question empty
-        if not previous_questions:
-            # gather the IDs of ALL questions
-            # in that category
-            for q in questions:
-                available_ids.append(q.id)
-        else:  # if it's not first question
-            # gather all IDs of ALL questions
-            # in that category
-            for q in questions:
-                available_ids.append(q.id)
-            # However, remove the IDs of
-            # previous questions
-            for a_id in available_ids:
-                for pq in previous_questions:
-                    if a_id == pq:
-                        available_ids.remove(a_id)
-        # choose a random ID from available IDs
-        random_q = random.choice(available_ids)
-        # get the question with random ID
-        question = Question.query.get(random_q).format()
-        # add question ID to previous questions list
-        previous_questions.append(question.get('id'))
-        return jsonify({
-            'success': True,
-            'previousQuestions': previous_questions,
-            'quiz_category': quiz_category,
-            'question': question
-            })
+        try:
+            # if they didn't choose category
+            if quiz_category:
+                # Get all questions
+                questions = Question.query.all()
+            else:  # otherwise get category by ID
+                # get all questions in that category
+                questions = Question.query.filter(
+                    Question.category == quiz_category['id']
+                )
+            # if its the first question
+            # a.k.a previous_question empty
+            if not previous_questions:
+                # gather the IDs of ALL questions
+                # in that category
+                for q in questions:
+                    available_ids.append(q.id)
+            else:  # if it's not first question
+                # gather all IDs of ALL questions
+                for q in questions:
+                    available_ids.append(q.id)
+                # However, remove the IDs of
+                # previous questions
+                for a_id in available_ids:
+                    for pq in previous_questions:
+                        if a_id == pq:
+                            available_ids.remove(a_id)
+            # choose a random ID from available IDs
+            random_q = random.choice(available_ids)
+            # get the question with random ID
+            question = Question.query.get(random_q).format()
+            # add question ID to previous questions list
+            previous_questions.append(question.get('id'))
+            return jsonify({
+                'success': True,
+                'previousQuestions': previous_questions,
+                'quiz_category': quiz_category,
+                'question': question
+                })
+        except BaseException:
+            abort(404)
     '''
     @TODO:
     Create error handlers for all expected errors
@@ -243,20 +254,27 @@ def create_app(test_config=None):
     '''
     @app.errorhandler(400)
     def handle_400(error):
-        return jsonify({'message': 'Bad Request!'})
+        return jsonify({
+            'message': 'Bad Request!'
+            }), 400
 
     @app.errorhandler(404)
     def handle_404(error):
         return jsonify({
             'message': 'resource not found!',
-            'success': False})
+            'success': False}), 404
 
     @app.errorhandler(405)
     def handle_405(error):
-        return jsonify({'message': 'method NOT allowed!'})
+        return jsonify({
+            'message': 'method NOT allowed!'
+            }), 405
 
     @app.errorhandler(422)
     def handle_422(error):
-        return jsonify({'message': 'Unprocessable Entity'})
+        return jsonify({
+            'success': False,
+            'message': 'unprocessable'
+            }), 422
 
     return app
