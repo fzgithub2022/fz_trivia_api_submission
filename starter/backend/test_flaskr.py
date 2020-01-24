@@ -47,7 +47,6 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(data['success'], True)
     
     def test_get_questions(self):
         # Test /questions endpoint
@@ -56,6 +55,15 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
+    
+    def test_delete_questions(self):
+        # Test /questions endpoint
+        res = self.client().delete('/questions/29')
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+    
+
 
 
 # Make the tests conveniently executable

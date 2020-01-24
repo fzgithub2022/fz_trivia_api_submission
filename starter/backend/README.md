@@ -198,7 +198,7 @@ GET /cateories/<int:c_id>/questions'
 
 
 GET /quizzes
-- Returns a random question. First it gets json arguments previous question and quiz category. Then It looks for questions available on that category in the database. Then it removes makes a list of the IDs of the questions and removes any IDs that have already been used in previous questions. From that list of question that it randomly pick ones and returns it.
+- Returns a random question. First it gets json arguments previous question and quiz category. Looks for questions available, with a category if chosen.. Then it removes makes a list of the IDs of the questions and removes any IDs that have already been used in previous questions. From that list of question that it randomly pick ones and returns it.
 -Request Arguments: Previous Questions is json containing list of previous questions, and category ID is current category.
 - Returns 1) Previous questions to keep avoid repeating and figure out when quizzed has ended 2)The question needed for the quiz and 3)Success boolean confirming question was fetched
 

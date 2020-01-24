@@ -50,13 +50,11 @@ def create_app(test_config=None):
                 categories[result.id] = result.type
             # return categories
             return jsonify({
-                'categories': categories,
-                'success': True
+                'categories': categories
             })
-        except:
+        except BaseException:
             abort(404)
-        
-        
+
     '''
     @TODO:
     Create an endpoint to handle GET requests for questions,
@@ -99,9 +97,13 @@ def create_app(test_config=None):
     '''
     @app.route('/questions/<int:q_id>', methods=['DELETE'])
     def delete_question(q_id):
-        to_delete = Question.query.get(q_id)
-        to_delete.delete()
-        return jsonify({'succes': True})
+        try:
+            to_delete = Question.query.get(q_id)
+            to_delete.delete()
+        except:
+            abort(404)
+        finally:
+            return jsonify({'succes': True})
     '''
     @TODO:
     Create an endpoint to POST a new question,
@@ -127,7 +129,7 @@ def create_app(test_config=None):
                 difficulty=difficulty
                 )
             Question.insert(new_question)
-        except:  # if not able to send status
+        except BaseException:  # if not able to send status
             return jsonify({
                 'status': 'question post failed!'
             })
@@ -168,13 +170,14 @@ def create_app(test_config=None):
     @app.route('/categories/<int:c_id>/questions')
     def q_bycategory(c_id):
         results = Question.query.filter(Question.category == c_id)
+        category = Category.query.get(c_id)
         questions = [result.format() for result in results]
         total_questions = int(len(questions))
         return jsonify({
             'success': True,
             'questions': questions,
             'total_questions': total_questions,
-            'current_category': c_id
+            'current_category': category.type
         })
     '''
     @TODO:
@@ -189,24 +192,48 @@ def create_app(test_config=None):
     '''
     @app.route('/quizzes', methods=['POST'])
     def start_quizzes():
+        # data from frontend and variables
         body = request.get_json()
-        previousQuestions = body.get('previousQuestions')
+        previous_questions = body.get('previous_questions')
         quiz_category = body.get('quiz_category')
-        category_questions = Question.query.filter(
-            Question.category == quiz_category
-            )
         available_ids = []
-        for category_question in category_questions:
-            available_ids.append(category_question.id)
-        if not previousQuestions:
-            for previousQuestion in previousQuestions:
-                available_ids.pop()
-        random_number = random.choice(available_ids)
-        result = Question.query.get(random_number)
-        question = result.format()
+        # if they didn't choose category
+        if quiz_category:
+            # Get all questions
+            questions = Question.query.all()
+        else:  # otherwise get category by ID
+            # get all questions in that category
+            questions = Question.query.filter(
+                Question.category == quiz_category['id']
+            )
+        # if its the first question
+        # a.k.a previous_question empty
+        if not previous_questions:
+            # gather the IDs of ALL questions
+            # in that category
+            for q in questions:
+                available_ids.append(q.id)
+        else:  # if it's not first question
+            # gather all IDs of ALL questions
+            # in that category
+            for q in questions:
+                available_ids.append(q.id)
+            # However, remove the IDs of
+            # previous questions
+            for a_id in available_ids:
+                for pq in previous_questions:
+                    if a_id == pq:
+                        available_ids.remove(a_id)
+        # choose a random ID from available IDs
+        random_q = random.choice(available_ids)
+        # get the question with random ID
+        question = Question.query.get(random_q).format()
+        # add question ID to previous questions list
+        previous_questions.append(question.get('id'))
         return jsonify({
             'success': True,
-            'previousQuestions': previousQuestions,
+            'previousQuestions': previous_questions,
+            'quiz_category': quiz_category,
             'question': question
             })
     '''
